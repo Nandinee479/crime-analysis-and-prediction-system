@@ -120,17 +120,17 @@
 <Modal title={editing ? 'Edit Location' : 'Add Location'} bind:open={showModal} on:close={() => showModal = false}>
   <svelte:fragment slot="body">
     <div class="form-group">
-      <label class="form-label">Location Name *</label>
-      <input class="form-control" bind:value={form.Location_Name} placeholder="e.g. Main Street, Central Park…" />
+      <label class="form-label" for="location-name">Location Name *</label>
+      <input id="location-name" class="form-control" bind:value={form.Location_Name} placeholder="e.g. Main Street, Central Park…" />
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">City</label>
-        <input class="form-control" bind:value={form.City} placeholder="City name" />
+        <label class="form-label" for="location-city">City</label>
+        <input id="location-city" class="form-control" bind:value={form.City} placeholder="City name" />
       </div>
       <div class="form-group">
-        <label class="form-label">Area Type</label>
-        <select class="form-control" bind:value={form.Area_Type}>
+        <label class="form-label" for="location-area">Area Type</label>
+        <select id="location-area" class="form-control" bind:value={form.Area_Type}>
           <option value="">— Select —</option>
           {#each areaTypes as t}<option value={t}>{t}</option>{/each}
         </select>

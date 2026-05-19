@@ -119,17 +119,17 @@
 <Modal title={editing ? 'Edit Suspect' : 'Add Suspect'} bind:open={showModal} on:close={() => showModal = false}>
   <svelte:fragment slot="body">
     <div class="form-group">
-      <label class="form-label">Full Name *</label>
-      <input class="form-control" bind:value={form.Suspect_Name} placeholder="Suspect full name" />
+      <label class="form-label" for="suspect-name">Full Name *</label>
+      <input id="suspect-name" class="form-control" bind:value={form.Suspect_Name} placeholder="Suspect full name" />
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Age</label>
-        <input class="form-control" type="number" min="1" max="120" bind:value={form.Age} placeholder="Age" />
+        <label class="form-label" for="suspect-age">Age</label>
+        <input id="suspect-age" class="form-control" type="number" min="1" max="120" bind:value={form.Age} placeholder="Age" />
       </div>
       <div class="form-group">
-        <label class="form-label">Gender</label>
-        <select class="form-control" bind:value={form.Gender}>
+        <label class="form-label" for="suspect-gender">Gender</label>
+        <select id="suspect-gender" class="form-control" bind:value={form.Gender}>
           <option value="">— Select —</option>
           <option>Male</option><option>Female</option><option>Other</option>
         </select>

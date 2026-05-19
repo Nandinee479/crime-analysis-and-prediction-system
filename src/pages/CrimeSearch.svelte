@@ -118,10 +118,13 @@
   </div>
 </div>
 
+<svelte:window on:keydown={(e) => selectedCrime && e.key === 'Escape' && closeModal()} />
+
 <!-- Crime Details Modal -->
 {#if selectedCrime}
-  <div class="modal-overlay" on:click={closeModal} on:keydown={(e) => e.key === 'Escape' && closeModal()} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-content" on:click|stopPropagation>
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <button class="modal-backdrop" type="button" aria-label="Close dialog" on:click={closeModal}></button>
+    <div class="modal-content">
       <div class="modal-header">
         <h3 id="modal-title">Crime Details - #{selectedCrime.Crime_ID}</h3>
         <button class="close-btn" on:click={closeModal} aria-label="Close modal">✕</button>
@@ -266,7 +269,18 @@
     z-index: 1000;
   }
 
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: default;
+  }
+
   .modal-content {
+    position: relative;
     background: white;
     border-radius: 12px;
     max-width: 600px;
@@ -321,7 +335,7 @@
     gap: 8px;
   }
 
-  .detail-item label {
+  .detail-item strong {
     font-weight: 600;
     color: #333;
     font-size: 14px;

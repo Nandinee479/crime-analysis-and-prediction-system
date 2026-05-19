@@ -100,7 +100,8 @@
 </script>
 
 <div class="page-header">
-  <div><h2>Crimes</h2><p>Manage crime incident records</p></div>
+  <div><h2>Crimes</h2>
+    <p>Manage crime incident records</p></div>
   <button class="btn btn-primary" on:click={openAdd}>＋ Add Crime</button>
 </div>
 
@@ -123,7 +124,14 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>#</th><th>Date</th><th>Type</th><th>Location</th><th>Severity</th><th style="width:100px;">Actions</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Severity</th>
+              <th style="width:100px;">Actions</th>
+            </tr>
           </thead>
           <tbody>
             {#each filtered as r, index}
@@ -156,8 +164,8 @@
   <svelte:fragment slot="body">
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Crime Type</label>
-        <select class="form-control" bind:value={form.Type_ID}>
+        <label class="form-label" for="crime-type">Crime Type</label>
+        <select id="crime-type" class="form-control" bind:value={form.Type_ID}>
           <option value="">— Select Type —</option>
           {#each crimeTypes as t}
             <option value={t.Type_ID}>{t.Type_Name}</option>
@@ -165,8 +173,8 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Severity</label>
-        <select class="form-control" bind:value={form.Severity}>
+        <label class="form-label" for="crime-severity">Severity</label>
+        <select id="crime-severity" class="form-control" bind:value={form.Severity}>
           <option value="">— Select —</option>
           {#each severities as s}<option value={s}>{s}</option>{/each}
         </select>
@@ -174,12 +182,12 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Crime Date</label>
-        <input class="form-control" type="date" bind:value={form.Crime_Date} />
+        <label class="form-label" for="crime-date">Crime Date</label>
+        <input id="crime-date" class="form-control" type="date" bind:value={form.Crime_Date} />
       </div>
       <div class="form-group">
-        <label class="form-label">Location</label>
-        <select class="form-control" bind:value={form.Location_ID}>
+        <label class="form-label" for="crime-location">Location</label>
+        <select id="crime-location" class="form-control" bind:value={form.Location_ID}>
           <option value="">— Select Location —</option>
           {#each locations as l}
             <option value={l.Location_ID}>{l.Location_Name}{l.City ? `, ${l.City}` : ''}</option>
