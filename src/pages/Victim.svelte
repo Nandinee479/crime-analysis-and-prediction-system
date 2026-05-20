@@ -65,7 +65,8 @@
         await window.api.victim.create(payload)
         showToast('Victim record added')
       }
-      showModal = false; await load()
+      showModal = false; 
+      await load()
     } catch (error) {
       showToast(error.message, 'error')
     } finally { saving = false }
@@ -82,6 +83,8 @@
       showToast(error.message, 'error')
     }
   }
+
+  //Drop down menu label for crimes
 
   function crimeLabel(c) {
     return `#${c.Crime_ID} — ${c.Type_Name || 'Unknown'} (${c.Crime_Date || 'no date'})`
