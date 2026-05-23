@@ -19,7 +19,7 @@
       loading = false
     }
   }
-
+             // Heat color based on crime count, scaled to maxCount
   function heatColor(count) {
     const ratio = maxCount > 0 ? count / maxCount : 0
     if (ratio === 0) return '#F5F5F5'
@@ -28,7 +28,7 @@
     const b = Math.min(255, Math.round((1 - ratio) * 100 + 55))
     return `rgb(${r},${g},${b})`
   }
-
+              // For better text contrast on darker tiles
   function heatTextColor(count) {
     const ratio = maxCount > 0 ? count / maxCount : 0
     return ratio > 0.5 ? '#fff' : '#333'
