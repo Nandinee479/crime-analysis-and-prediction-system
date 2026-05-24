@@ -84,7 +84,12 @@
     selectedCrime = null
     progressLog = []
   }
+  
+  function overlayKey(e) { if (e.key === 'Enter' || e.key === ' ') closeLogModal() }
+  function onWindowKey(e) { if (e.key === 'Escape') closeLogModal() }
 </script>
+
+<svelte:window on:keydown={onWindowKey} />
 
 <div class="page-header">
   <div>
@@ -217,8 +222,8 @@
 
 <!-- Progress Log Modal -->
 {#if showLogModal && selectedCrime}
-  <div class="modal-overlay" on:click|self={closeLogModal}>
-    <div class="modal" style="max-width:540px;">
+  <div class="modal-overlay" role="button" tabindex="0" on:click|self={closeLogModal} on:keydown={overlayKey}>
+    <div class="modal" role="dialog" aria-modal="true" tabindex="-1" style="max-width:540px;">
       <div class="modal-header">
         <div>
           <h3>📋 Update History</h3>

@@ -465,11 +465,22 @@ ipcMain.handle('dashboard:getStats', handleDbOperation(() => {
     WHERE Severity IS NOT NULL GROUP BY Severity ORDER BY count DESC
   `).all()
 
-  const monthlyTrend = db.prepare(`
+  // Generate last 6 months (always show all 6, even with zero crimes)
+  const months = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - i)
+    months.push(d.toISOString().substring(0, 7))
+  }
+  const counts = db.prepare(`
     SELECT strftime('%Y-%m', Crime_Date) AS month, COUNT(*) AS count
     FROM crime WHERE Crime_Date IS NOT NULL
-    GROUP BY month ORDER BY month DESC LIMIT 6
-  `).all().reverse()
+    AND Crime_Date >= ?
+    GROUP BY month
+  `).all(months[0])
+  const countMap = {}
+  for (const r of counts) countMap[r.month] = r.count
+  const monthlyTrend = months.map(m => ({ month: m, count: countMap[m] || 0 }))
 
   // prediction: linear regression on monthly counts
   const monthlyAll = db.prepare(`

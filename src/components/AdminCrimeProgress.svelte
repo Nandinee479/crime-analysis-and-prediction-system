@@ -1,270 +1,310 @@
-<!-- src/components/AdminCrimeProgress.svelte -->
-<!-- Admin panel: view all crimes and update their progress status -->
-
 <script>
-  import { onMount } from 'svelte';
+  import { onMount } from 'svelte'
 
-  // currentUserId should be passed from your auth/session store
-  export let currentUserId = null;
+  export let currentUserId = null
 
-  let crimes = [];
-  let loading = true;
-  let error = '';
+  let crimes = []
+  let loading = true
+  let error = ''
+  let search = ''
+  let filterStatus = 'All'
 
-  // Modal state
-  let selectedCrime = null;
-  let showModal = false;
-  let newStatus = '';
-  let note = '';
-  let saving = false;
-  let saveMsg = '';
+  let selectedCrime = null
+  let showModal = false
+  let newStatus = ''
+  let note = ''
+  let saving = false
+  let saveMsg = ''
 
-  // Progress log modal
-  let showLogModal = false;
-  let progressLog = [];
-  let logLoading = false;
+  let showLogModal = false
+  let progressLog = []
+  let logLoading = false
 
-  const statuses = ['Ongoing', 'Under Investigation', 'Suspect Caught', 'Case Closed'];
+  const statuses = ['All', 'Ongoing', 'Under Investigation', 'Suspect Caught', 'Case Closed']
 
-  const statusColor = {
-    'Ongoing':              'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'Under Investigation':  'bg-blue-100 text-blue-800 border-blue-300',
-    'Suspect Caught':       'bg-orange-100 text-orange-800 border-orange-300',
-    'Case Closed':          'bg-green-100 text-green-800 border-green-300',
-  };
+  const statusMeta = {
+    'Ongoing':             { icon: '🔄', color: '#F57F17', bg: '#FFF8E1' },
+    'Under Investigation': { icon: '🔍', color: '#1565C0', bg: '#E3F2FD' },
+    'Suspect Caught':      { icon: '🚔', color: '#E65100', bg: '#FFF3E0' },
+    'Case Closed':         { icon: '✅', color: '#2E7D32', bg: '#E8F5E9' },
+  }
 
-  const statusIcon = {
-    'Ongoing':              '🔄',
-    'Under Investigation':  '🔍',
-    'Suspect Caught':       '🚔',
-    'Case Closed':          '✅',
-  };
+  const progressSteps = ['Ongoing', 'Under Investigation', 'Suspect Caught', 'Case Closed']
 
-  onMount(fetchCrimes);
+  onMount(fetchCrimes)
 
   async function fetchCrimes() {
-    loading = true;
-    error = '';
+    loading = true
+    error = ''
     try {
-      crimes = await window.api.crimeProgress.getAll();
+      crimes = await window.api.crimeProgress.getAll()
     } catch (e) {
-      error = 'Failed to load crimes: ' + e.message;
+      error = 'Failed to load crimes: ' + e.message
     } finally {
-      loading = false;
+      loading = false
     }
   }
 
+  $: filtered = crimes.filter(c => {
+    const matchSearch =
+      !search ||
+      (c.Type_Name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.Location_Name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.City || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(c.Crime_ID).includes(search)
+    const matchStatus = filterStatus === 'All' || (c.Progress || 'Ongoing') === filterStatus
+    return matchSearch && matchStatus
+  })
+
+  $: summary = statuses.slice(1).map(s => ({
+    label: s,
+    count: crimes.filter(c => (c.Progress || 'Ongoing') === s).length,
+    ...statusMeta[s],
+  }))
+
   function openUpdateModal(crime) {
-    selectedCrime = crime;
-    newStatus = crime.Progress || 'Ongoing';
-    note = '';
-    saveMsg = '';
-    showModal = true;
+    selectedCrime = crime
+    newStatus = crime.Progress || 'Ongoing'
+    note = ''
+    saveMsg = ''
+    showModal = true
   }
 
   function closeModal() {
-    showModal = false;
-    selectedCrime = null;
+    showModal = false
+    selectedCrime = null
   }
 
   async function saveProgress() {
-    if (!newStatus) return;
-    saving = true;
-    saveMsg = '';
+    if (!newStatus) return
+    saving = true
+    saveMsg = ''
     try {
       const result = await window.api.crimeProgress.update({
         crimeId: selectedCrime.Crime_ID,
         status: newStatus,
         note: note.trim(),
         updatedBy: currentUserId
-      });
+      })
       if (result.success) {
-        saveMsg = '✅ Progress updated successfully!';
-        await fetchCrimes();
-        setTimeout(() => { closeModal(); }, 1000);
+        saveMsg = '✅ Progress updated successfully!'
+        await fetchCrimes()
+        setTimeout(() => { closeModal() }, 1000)
       } else {
-        saveMsg = '❌ Error: ' + (result.error || 'Unknown error');
+        saveMsg = '❌ Error: ' + (result.error || 'Unknown error')
       }
     } catch (e) {
-      saveMsg = '❌ Failed: ' + e.message;
+      saveMsg = '❌ Failed: ' + e.message
     } finally {
-      saving = false;
+      saving = false
     }
   }
 
   async function openLogModal(crime) {
-    selectedCrime = crime;
-    showLogModal = true;
-    logLoading = true;
-    progressLog = [];
+    selectedCrime = crime
+    showLogModal = true
+    logLoading = true
+    progressLog = []
     try {
-      progressLog = await window.api.crimeProgress.getLog(crime.Crime_ID);
+      progressLog = await window.api.crimeProgress.getLog(crime.Crime_ID)
     } catch (e) {
-      progressLog = [];
+      progressLog = []
     } finally {
-      logLoading = false;
+      logLoading = false
     }
   }
 
   function closeLogModal() {
-    showLogModal = false;
-    selectedCrime = null;
-    progressLog = [];
+    showLogModal = false
+    selectedCrime = null
+    progressLog = []
   }
 </script>
 
-<div class="p-6 max-w-7xl mx-auto">
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">🛡️ Crime Progress Management</h1>
-      <p class="text-sm text-gray-500 mt-1">Update and track the investigation status of each crime</p>
-    </div>
-    <button
-      on:click={fetchCrimes}
-      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition"
-    >
-      🔄 Refresh
-    </button>
+<div class="page-header">
+  <div>
+    <h2>🛡️ Crime Progress Management</h2>
+    <p>Update and track the investigation status of each crime</p>
   </div>
+  <button class="btn btn-primary" on:click={fetchCrimes} disabled={loading}>
+    🔄 Refresh
+  </button>
+</div>
 
-  <!-- Error -->
+<div class="content-area">
   {#if error}
-    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>
+    <div class="toast toast-error" style="margin-bottom:16px;">{error}</div>
   {/if}
+
+  {#if !loading}
+    <!-- Summary Cards -->
+    <div class="progress-summary">
+      {#each summary as s}
+        <button
+          class="summary-card"
+          class:summary-active={filterStatus === s.label}
+          style="border-color:{s.color}; {filterStatus === s.label ? `background:${s.bg};` : ''}"
+          on:click={() => filterStatus = filterStatus === s.label ? 'All' : s.label}
+        >
+          <div class="summary-icon">{s.icon}</div>
+          <div class="summary-count" style="color:{s.color};">{s.count}</div>
+          <div class="summary-label">{s.label}</div>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Search & Filter -->
+  <div class="progress-toolbar">
+    <div class="search-wrap" style="max-width:360px;">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        bind:value={search}
+        placeholder="Search type, location, ID..."
+      />
+    </div>
+    <select class="form-control" style="width:auto; min-width:150px;" bind:value={filterStatus}>
+      {#each statuses as s}
+        <option value={s}>{s === 'All' ? '📂 All Statuses' : (statusMeta[s]?.icon || '') + ' ' + s}</option>
+      {/each}
+    </select>
+    <span class="toolbar-count">{crimes.length} record{crimes.length !== 1 ? 's' : ''}</span>
+  </div>
 
   <!-- Loading -->
   {#if loading}
-    <div class="flex justify-center items-center h-48">
-      <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading crime data…</p>
+    </div>
+
+  {:else if filtered.length === 0}
+    <div class="empty-state">
+      <div class="icon">🔎</div>
+      <p>{crimes.length === 0 ? 'No crime records found.' : 'No crimes match your search.'}</p>
     </div>
 
   {:else}
     <!-- Table -->
-    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
-          <tr>
-            <th class="px-4 py-3 text-left">ID</th>
-            <th class="px-4 py-3 text-left">Crime Type</th>
-            <th class="px-4 py-3 text-left">Severity</th>
-            <th class="px-4 py-3 text-left">Date</th>
-            <th class="px-4 py-3 text-left">Location</th>
-            <th class="px-4 py-3 text-left">Suspects</th>
-            <th class="px-4 py-3 text-left">Status</th>
-            <th class="px-4 py-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {#each crimes as crime (crime.Crime_ID)}
-            <tr class="hover:bg-gray-50 transition">
-              <td class="px-4 py-3 font-mono text-gray-500">#{crime.Crime_ID}</td>
-              <td class="px-4 py-3 font-medium text-gray-800">{crime.Type_Name || '—'}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold
-                  {crime.Severity === 'High'   ? 'bg-red-100 text-red-700' :
-                   crime.Severity === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                                                  'bg-green-100 text-green-700'}">
-                  {crime.Severity || '—'}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-gray-600">{crime.Crime_Date || '—'}</td>
-              <td class="px-4 py-3 text-gray-600">{crime.Location_Name || '—'}{crime.City ? `, ${crime.City}` : ''}</td>
-              <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{crime.Suspects || 'None'}</td>
-              <td class="px-4 py-3">
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border
-                  {statusColor[crime.Progress] || 'bg-gray-100 text-gray-700 border-gray-300'}">
-                  {statusIcon[crime.Progress] || '❓'} {crime.Progress || 'Ongoing'}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <button
-                    on:click={() => openUpdateModal(crime)}
-                    class="px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition"
-                  >
-                    ✏️ Update
-                  </button>
-                  <button
-                    on:click={() => openLogModal(crime)}
-                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition"
-                  >
-                    📋 History
-                  </button>
-                </div>
-              </td>
-            </tr>
-          {/each}
-
-          {#if crimes.length === 0}
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <td colspan="8" class="px-4 py-12 text-center text-gray-400">No crimes found.</td>
+              <th>ID</th>
+              <th>Crime Type</th>
+              <th>Severity</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Suspects</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          {/if}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {#each filtered as crime (crime.Crime_ID)}
+              <tr>
+                <td class="cell-mono">#{crime.Crime_ID}</td>
+                <td class="cell-type">{crime.Type_Name || '—'}</td>
+                <td>
+                  <span class="badge badge-{(crime.Severity || 'default').toLowerCase()}">
+                    {crime.Severity || '—'}
+                  </span>
+                </td>
+                <td class="cell-date">{crime.Crime_Date || '—'}</td>
+                <td>{crime.Location_Name || '—'}{crime.City ? `, ${crime.City}` : ''}</td>
+                <td class="cell-suspects">{crime.Suspects || '—'}</td>
+                <td>
+                  <span class="status-pill" style="background:{statusMeta[crime.Progress]?.bg || '#F5F5F5'}; color:{statusMeta[crime.Progress]?.color || '#666'};">
+                    {statusMeta[crime.Progress]?.icon || '❓'} {crime.Progress || 'Ongoing'}
+                  </span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" on:click={() => openUpdateModal(crime)}>
+                      ✏️ Update
+                    </button>
+                    <button class="btn btn-secondary" style="padding:6px 14px; font-size:12px;" on:click={() => openLogModal(crime)}>
+                      📋 Log
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
     </div>
   {/if}
 </div>
 
 <!-- ====== Update Progress Modal ====== -->
 {#if showModal && selectedCrime}
-  <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-      <div class="p-6 border-b border-gray-100">
-        <h2 class="text-lg font-bold text-gray-800">✏️ Update Crime Progress</h2>
-        <p class="text-sm text-gray-500 mt-1">Crime #{selectedCrime.Crime_ID} — {selectedCrime.Type_Name}</p>
+  <div
+    class="modal-overlay"
+    role="button"
+    aria-label="Close modal"
+    tabindex="0"
+    on:click|self={closeModal}
+    on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && closeModal()}
+  >
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div>
+          <h3>✏️ Update Crime Progress</h3>
+          <p style="font-size:13px; color:var(--md-outline); margin-top:4px;">
+            Crime #{selectedCrime.Crime_ID} — {selectedCrime.Type_Name}
+          </p>
+        </div>
+        <button class="modal-close" on:click={closeModal}>✕</button>
       </div>
 
-      <div class="p-6 space-y-4">
-        <!-- Current status -->
-        <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-          <span class="font-medium">Current Status:</span>
-          <span class="ml-2 font-semibold">{statusIcon[selectedCrime.Progress] || '❓'} {selectedCrime.Progress || 'Ongoing'}</span>
+      <div class="modal-body">
+        <div class="current-status-banner" style="background:{statusMeta[selectedCrime.Progress]?.bg || '#F5F5F5'}; color:{statusMeta[selectedCrime.Progress]?.color || '#666'};">
+          <span>Current Status:</span>
+          <strong>{statusMeta[selectedCrime.Progress]?.icon || '❓'} {selectedCrime.Progress || 'Ongoing'}</strong>
         </div>
 
-        <!-- New status selector -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">New Status</label>
-          <div class="grid grid-cols-2 gap-2">
-            {#each statuses as s}
+        <fieldset class="form-group">
+          <legend class="form-label">New Status</legend>
+          <div class="status-grid">
+            {#each progressSteps as s}
               <button
+                type="button"
+                class="status-option"
+                class:status-option-active={newStatus === s}
+                style={newStatus === s ? `border-color:${statusMeta[s]?.color}; background:${statusMeta[s]?.bg};` : ''}
                 on:click={() => newStatus = s}
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition
-                  {newStatus === s
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'}"
               >
-                <span>{statusIcon[s]}</span>
+                <span class="status-option-icon">{statusMeta[s]?.icon}</span>
                 <span>{s}</span>
               </button>
             {/each}
           </div>
-        </div>
+        </fieldset>
 
-        <!-- Note -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">Note <span class="text-gray-400 font-normal">(optional)</span></label>
+        <div class="form-group">
+          <label class="form-label" for="progress-note">Note <span style="color:var(--md-outline); font-weight:400;">(optional)</span></label>
           <textarea
+            id="progress-note"
             bind:value={note}
-            rows="3"
+            rows="4"
             placeholder="Add a note about this update..."
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+            class="form-control"
           ></textarea>
         </div>
 
         {#if saveMsg}
-          <div class="text-sm font-medium {saveMsg.startsWith('✅') ? 'text-green-600' : 'text-red-600'}">{saveMsg}</div>
+          <div class="save-msg" class:save-success={saveMsg.startsWith('✅')} class:save-error={saveMsg.startsWith('❌')}>
+            {saveMsg}
+          </div>
         {/if}
       </div>
 
-      <div class="p-6 pt-0 flex gap-3 justify-end">
-        <button on:click={closeModal} class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition">Cancel</button>
-        <button
-          on:click={saveProgress}
-          disabled={saving || !newStatus}
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
-        >
+      <div class="modal-footer">
+        <button class="btn btn-secondary" on:click={closeModal}>Cancel</button>
+        <button class="btn btn-primary" on:click={saveProgress} disabled={saving || !newStatus}>
           {saving ? 'Saving...' : '💾 Save Progress'}
         </button>
       </div>
@@ -272,47 +312,247 @@
   </div>
 {/if}
 
-<!-- ====== Progress History/Log Modal ====== -->
+<!-- ====== Progress Log Modal ====== -->
 {#if showLogModal && selectedCrime}
-  <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-      <div class="p-6 border-b border-gray-100 flex justify-between items-start">
+  <div
+    class="modal-overlay"
+    role="button"
+    aria-label="Close modal"
+    tabindex="0"
+    on:click|self={closeLogModal}
+    on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && closeLogModal()}
+  >
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:540px;">
+      <div class="modal-header">
         <div>
-          <h2 class="text-lg font-bold text-gray-800">📋 Progress History</h2>
-          <p class="text-sm text-gray-500 mt-1">Crime #{selectedCrime.Crime_ID} — {selectedCrime.Type_Name}</p>
+          <h3>📋 Progress History</h3>
+          <p style="font-size:13px; color:var(--md-outline); margin-top:4px;">
+            Crime #{selectedCrime.Crime_ID} — {selectedCrime.Type_Name}
+          </p>
         </div>
-        <button on:click={closeLogModal} class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+        <button class="modal-close" on:click={closeLogModal}>✕</button>
       </div>
 
-      <div class="p-6 max-h-80 overflow-y-auto space-y-3">
+      <div class="modal-body">
         {#if logLoading}
-          <div class="flex justify-center py-8">
-            <div class="w-6 h-6 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+          <div class="loading-state" style="padding:32px 0;">
+            <div class="spinner"></div>
           </div>
         {:else if progressLog.length === 0}
-          <p class="text-center text-gray-400 py-8">No history yet. Progress has not been updated.</p>
+          <div class="empty-state" style="padding:32px 0;">
+            <div class="icon" style="font-size:36px;">📭</div>
+            <p>No updates recorded yet for this case.</p>
+          </div>
         {:else}
-          {#each progressLog as log (log.Log_ID)}
-            <div class="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div class="text-xl">{statusIcon[log.Status] || '❓'}</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-semibold text-sm text-gray-800">{log.Status}</span>
-                  <span class="text-xs text-gray-400 whitespace-nowrap">{log.Updated_At}</span>
+          <div class="timeline">
+            <div class="timeline-line"></div>
+            {#each progressLog as log (log.Log_ID)}
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:{statusMeta[log.Status]?.bg || '#F5F5F5'}; color:{statusMeta[log.Status]?.color || '#666'};">
+                  {statusMeta[log.Status]?.icon || '❓'}
                 </div>
-                {#if log.Note}
-                  <p class="text-sm text-gray-600 mt-1">{log.Note}</p>
-                {/if}
-                <p class="text-xs text-gray-400 mt-1">by {log.Updated_By || 'Unknown'}</p>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-status" style="color:{statusMeta[log.Status]?.color || '#666'};">
+                      {log.Status}
+                    </span>
+                    <span class="timeline-date">{log.Updated_At}</span>
+                  </div>
+                  {#if log.Note}
+                    <p class="timeline-note">{log.Note}</p>
+                  {/if}
+                  <p class="timeline-author">by {log.Updated_By || 'System'}</p>
+                </div>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         {/if}
       </div>
 
-      <div class="p-6 pt-0 flex justify-end">
-        <button on:click={closeLogModal} class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition">Close</button>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" on:click={closeLogModal}>Close</button>
       </div>
     </div>
   </div>
 {/if}
+
+<style>
+  .progress-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: var(--md-surface);
+    border: 2px solid #E0E0E0;
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+  }
+  .summary-card:hover {
+    box-shadow: var(--md-elevation2);
+    transform: translateY(-2px);
+  }
+  .summary-active {
+    box-shadow: var(--md-elevation1);
+  }
+  .summary-icon { font-size: 28px; margin-bottom: 6px; }
+  .summary-count { font-size: 28px; font-weight: 800; line-height: 1.2; }
+  .summary-label { font-size: 12px; color: var(--md-outline); margin-top: 4px; font-weight: 500; }
+
+  .progress-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .toolbar-count {
+    font-size: 13px;
+    color: var(--md-outline);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .loading-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px 0; color: var(--md-outline); gap: 12px;
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid #E0E0E0; border-top-color: var(--md-primary);
+    border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg) } }
+
+  .cell-mono { font-family: monospace; font-size: 13px; color: var(--md-outline); font-weight: 600; }
+  .cell-type { font-weight: 600; color: var(--md-primary); }
+  .cell-date { white-space: nowrap; }
+  .cell-suspects { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .row-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Current status banner */
+  .current-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  /* Status grid */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .status-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 2px solid #E0E0E0;
+    border-radius: var(--radius-sm);
+    background: var(--md-surface);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    transition: all var(--transition);
+    font-family: inherit;
+    text-align: left;
+  }
+  .status-option:hover {
+    border-color: var(--md-primary-lt);
+    background: #F5F5F5;
+  }
+  .status-option-active {
+    border-color: var(--md-primary);
+    font-weight: 600;
+  }
+  .status-option-icon { font-size: 18px; }
+
+  .save-msg {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 10px;
+  }
+  .save-success {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+  .save-error {
+    background: #FFEBEE;
+    color: #C62828;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline-line {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #E0E0E0;
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -28px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 2px solid #E0E0E0;
+    z-index: 1;
+  }
+  .timeline-content {
+    background: #FAFAFA;
+    border: 1px solid #ECEFF1;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+  }
+  .timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .timeline-status { font-weight: 700; font-size: 14px; }
+  .timeline-date { font-size: 12px; color: var(--md-outline); }
+  .timeline-note { font-size: 13px; color: #444; margin-top: 6px; line-height: 1.5; }
+  .timeline-author { font-size: 11px; color: var(--md-outline); margin-top: 6px; }
+</style>

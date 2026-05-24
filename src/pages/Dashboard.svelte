@@ -46,6 +46,16 @@
     }
   }
 
+  function trendColor(count, max) {
+    if (max === 0) return '#E0E0E0'
+    const ratio = count / max
+    if (ratio <= 0.2) return '#C5CAE9'
+    if (ratio <= 0.4) return '#9FA8DA'
+    if (ratio <= 0.6) return '#7986CB'
+    if (ratio <= 0.8) return '#5C6BC0'
+    return '#1A237E'
+  }
+
   function severityColor(s) {
     if (!s) return '#9C27B0'
     const l = s.toLowerCase()
@@ -197,7 +207,7 @@
           <div class="trend-chart">
             {#each stats.monthlyTrend as row}
               <div class="trend-bar-wrap">
-                <div class="trend-bar" style="height: {(row.count / maxCount(stats.monthlyTrend)) * 100}%; background:var(--md-primary);">
+                <div class="trend-bar" style="height: {(row.count / maxCount(stats.monthlyTrend)) * 100}%; background:{trendColor(row.count, maxCount(stats.monthlyTrend))};">
                   <span class="trend-bar-label">{row.count}</span>
                 </div>
                 <div class="trend-month">{row.month}</div>
@@ -319,16 +329,28 @@
   .legend-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .legend-pct { font-weight: 600; color: #555; }
   .trend-chart {
-    display: flex; align-items: flex-end; gap: 10px; height: 180px;
-    padding: 0 8px; border-bottom: 1px solid #E0E0E0;
+    display: flex; align-items: flex-end; gap: 6px; height: 200px;
+    padding: 20px 8px 0; border-bottom: 1px solid #E0E0E0;
   }
-  .trend-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .trend-bar-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; height: 100%; justify-content: flex-end;
+  }
   .trend-bar {
-    width: 100%; border-radius: 4px 4px 0 0; position: relative; min-height: 4px;
-    transition: height .4s ease;
+    width: 100%; max-width: 48px;
+    border-radius: 6px 6px 2px 2px; position: relative;
+    min-height: 6px; transition: height .4s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
   }
-  .trend-bar-label { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: #555; }
-  .trend-month { font-size: 11px; color: #888; margin-top: 6px; text-align: center; writing-mode: horizontal-tb; }
+  .trend-bar-label {
+    position: absolute; top: -22px; left: 50%;
+    transform: translateX(-50%); font-size: 12px;
+    font-weight: 700; color: #333; white-space: nowrap;
+  }
+  .trend-month {
+    font-size: 11px; color: #888; margin-top: 8px;
+    text-align: center; font-weight: 500;
+  }
   .prediction-card {
     display: flex; align-items: center; gap: 20px;
     background: linear-gradient(135deg, #EDE7F6, #E8EAF6);

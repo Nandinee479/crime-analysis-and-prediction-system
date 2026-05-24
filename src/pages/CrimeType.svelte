@@ -24,7 +24,8 @@
   function applyFilter() {
     const q = search.toLowerCase()
     filtered = q
-      ? records.filter(r => r.Type_Name?.toLowerCase().includes(q) || r.Description?.toLowerCase().includes(q))
+      ? records.filter(r => r.Type_Name?.toLowerCase().includes(q) || 
+      r.Description?.toLowerCase().includes(q))
       : records
   }
 
@@ -126,12 +127,12 @@
 <Modal title={editing ? 'Edit Crime Type' : 'Add Crime Type'} bind:open={showModal} on:close={() => showModal = false}>
   <svelte:fragment slot="body">
     <div class="form-group">
-      <label class="form-label">Type Name *</label>
-      <input class="form-control" bind:value={form.Type_Name} placeholder="e.g. Robbery, Assault…" />
+      <label class="form-label" for="crime-type-name">Type Name *</label>
+      <input id="crime-type-name" class="form-control" bind:value={form.Type_Name} placeholder="e.g. Robbery, Assault…" />
     </div>
     <div class="form-group">
-      <label class="form-label">Description</label>
-      <textarea class="form-control" bind:value={form.Description} placeholder="Optional description…" rows="3"></textarea>
+      <label class="form-label" for="crime-type-description">Description</label>
+      <textarea id="crime-type-description" class="form-control" bind:value={form.Description} placeholder="Optional description…" rows="3"></textarea>
     </div>
   </svelte:fragment>
   <svelte:fragment slot="footer">

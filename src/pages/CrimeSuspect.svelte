@@ -17,6 +17,10 @@
     ])
     await load()
   })
+    //covert number to string for select binding, keep null/undefined as empty string for "no selection" state
+  function normalizeSelectionValue(value) {
+    return value == null ? '' : String(value)
+  }
 
   async function load() {
     records = await window.api.crimeSuspect.getAll()
@@ -39,7 +43,12 @@
     editing = null; form = { Crime_ID: '', Suspect_ID: '' }; showModal = true
   }
   function openEdit(r) {
-    editing = r; form = { Crime_ID: r.Crime_ID ?? '', Suspect_ID: r.Suspect_ID ?? '' }; showModal = true
+    editing = r
+    form = {
+      Crime_ID: normalizeSelectionValue(r.Crime_ID),
+      Suspect_ID: normalizeSelectionValue(r.Suspect_ID)
+    }
+    showModal = true
   }
   function openDelete(id) { deleteId = id; showConfirm = true }
 
@@ -74,7 +83,7 @@
   }
 
   function crimeLabel(c) {
-    return `#${c.Crime_ID} — ${c.Type_Name || 'Unknown'} (${c.Crime_Date || 'no date'})`
+    return `#${c.Crime_ID} — ${c.Type_Name || c.Crime_Type || 'Unknown'} (${c.Crime_Date || 'no date'})`
   }
 </script>
 
@@ -130,20 +139,20 @@
 <Modal title={editing ? 'Edit Crime-Suspect Link' : 'Link Suspect to Crime'} bind:open={showModal} on:close={() => showModal = false}>
   <svelte:fragment slot="body">
     <div class="form-group">
-      <label class="form-label">Crime *</label>
-      <select class="form-control" bind:value={form.Crime_ID}>
+      <label class="form-label" for="crime-select">Crime *</label>
+      <select id="crime-select" class="form-control" bind:value={form.Crime_ID}>
         <option value="">— Select Crime —</option>
         {#each crimes as c}
-          <option value={c.Crime_ID}>{crimeLabel(c)}</option>
+          <option value={normalizeSelectionValue(c.Crime_ID)}>{crimeLabel(c)}</option>
         {/each}
       </select>
     </div>
     <div class="form-group">
-      <label class="form-label">Suspect *</label>
-      <select class="form-control" bind:value={form.Suspect_ID}>
+      <label class="form-label" for="suspect-select">Suspect *</label>
+      <select id="suspect-select" class="form-control" bind:value={form.Suspect_ID}>
         <option value="">— Select Suspect —</option>
         {#each suspects as s}
-          <option value={s.Suspect_ID}>{s.Suspect_Name}{s.Age ? `, Age ${s.Age}` : ''}</option>
+          <option value={normalizeSelectionValue(s.Suspect_ID)}>{s.Suspect_Name}{s.Age ? `, Age ${s.Age}` : ''}</option>
         {/each}
       </select>
     </div>
